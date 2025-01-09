@@ -1,0 +1,118 @@
+﻿@page "/User"
+@inject BlazorApp_Frontend.Services.UserService UserService
+
+<PageTitle>User Management</PageTitle>
+
+<h1>User Management</h1>
+
+<!-- Form to add or edit users -->
+<EditForm Model="@user" OnValidSubmit="HandleValidSubmit">
+	<DataAnnotationsValidator />
+	<ValidationSummary />
+
+	<div class="row">
+		<div class="col-12">
+			<div>
+				<input type="hidden" id="userID" @bind="user.UserID" />
+			</div>
+		</div>
+		<div class="col-4">
+			<div>
+				<label for="userName">UserName:</label>
+				<InputText id="userName" class="form-control" @bind-Value="user.UserName" required />
+			</div>
+		</div>
+		<div class="col-4">
+			<div>
+				<label for="email">Email:</label>
+				<InputText id="email" class="form-control" @bind-Value="user.Email" required />
+			</div>
+		</div>
+		<div class="col-12 text-end">
+			<div>
+				<button type="submit" class="btn btn-primary">Save</button>
+			</div>
+		</div>
+	</div>
+</EditForm>
+
+<h3>Users List</h3>
+<div class="col-12 mt-2">
+	<table class="table">
+		<thead>
+			<tr>
+				<th>UserID</th>
+				<th>UserName</th>
+				<th>Email</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var user in users)
+			{
+				<tr>
+					<td>@user.UserID</td>
+					<td>@user.UserName</td>
+					<td>@user.Email</td>
+					<td>
+						<button class="btn btn-warning" @onclick="() => EditUser(user.UserID)">Edit</button>
+						<button class="btn btn-danger" @onclick="() => DeleteUser(user.UserID)">Delete</button>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+
+@code {
+	private List<Models.Users> users = new List<Models.Users>();
+	private Models.Users user = new Models.Users();
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadUsersAsync();
+	}
+
+	private async Task LoadUsersAsync()
+	{
+		users = await UserService.GetAllUsersAsync();
+	}
+
+	private async Task EditUser(int? userID)
+	{
+		user = await UserService.GetUserByIdAsync(userID);
+	}
+
+	private async Task DeleteUser(int? userID)
+	{
+		var result = await UserService.DeleteUserAsync(userID);
+		if (result)
+		{
+			await LoadUsersAsync();
+		}
+	}
+
+	private async Task HandleValidSubmit()
+	{
+		if (user.UserID == null || user.UserID == 0)
+		{
+
+			var result = await UserService.AddUserAsync(user);
+			if (result)
+			{
+				await LoadUsersAsync();
+			}
+		}
+		else
+		{
+			// Update existing user if UserID is not 0
+			var result = await UserService.UpdateUserAsync(user);
+			if (result)
+			{
+				await LoadUsersAsync(); // Reload users after updating
+			}
+		}
+		user = new Models.Users();  // Reset form after submit
+	}
+}
