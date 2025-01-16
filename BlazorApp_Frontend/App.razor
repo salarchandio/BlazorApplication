@@ -11,11 +11,13 @@
     </NotFound>
 </Router>
 @code {
+    [Inject] private NavigationManager NavigationManager { get; set; }
+
     protected override void OnInitialized()
     {
-        // Automatically navigate to the Users page when the app starts
-        NavigationManager.NavigateTo("/User");
+        if (NavigationManager.Uri == NavigationManager.BaseUri)
+        {
+            NavigationManager.NavigateTo("/UserManagement");
+        }
     }
-
-    [Inject] private NavigationManager NavigationManager { get; set; }
 }

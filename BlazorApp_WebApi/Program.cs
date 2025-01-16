@@ -17,6 +17,7 @@ builder.Services.AddSignalR();
 
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection("ConnectionStrings"));
 builder.Services.AddScoped<DAL>();
+builder.Services.AddScoped<ChatHub>();
 builder.Services.AddScoped<BaseRepository>();
 builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<ProductRepository>();

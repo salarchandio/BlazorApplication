@@ -1,0 +1,74 @@
+﻿@page "/UserStatus"
+@inject BlazorApp_Frontend.Services.UserService UserService
+@inject NavigationManager NavigationManager
+@inject BlazorApp_Frontend.Services.SignalRService SignalRService
+@using System.Text.Json
+<h3>User Status</h3>
+
+<div class="col-12 mt-2">
+	<table class="table">
+		<thead>
+			<tr>
+				<th>UserID</th>
+				<th>UserName</th>
+				<th>Email</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var user in users)
+			{
+				<tr>
+					<td>@user.UserID</td>
+					<td>@user.UserName</td>
+					<td>@user.Email</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+@code {
+	private List<string> MessageList = new();
+	private string? UserInput;
+	private string? MessageInput;
+	private List<Models.Users> users = new List<Models.Users>();
+	private Models.Users user = new Models.Users();
+
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		SignalRService.OnUserReceived -= HandleMessageReceived; // Unsubscribe previous handler
+		SignalRService.OnUserReceived += HandleMessageReceived; // Subscribe current handler
+
+		await SignalRService.InitializeAsyncForUsers("https://localhost:7221/chathub");
+		await LoadUsersAsync();
+	}
+
+	private void HandleMessageReceived(string user)
+	{
+		// Deserialize the JSON data into a List of Users
+		List<Models.Users> _userlist = JsonSerializer.Deserialize<List<Models.Users>>(user);
+
+		if (_userlist != null)
+		{
+			// Update the local list
+			users = _userlist;
+
+			// Refresh the UI
+			InvokeAsync(StateHasChanged);
+		}
+	}
+
+
+	public async ValueTask DisposeAsync()
+	{
+		SignalRService.OnUserReceived -= HandleMessageReceived;
+		await SignalRService.DisposeAsync();
+	}
+
+	private async Task LoadUsersAsync()
+	{
+		users = await UserService.GetAllUsersAsync();
+	}
+}

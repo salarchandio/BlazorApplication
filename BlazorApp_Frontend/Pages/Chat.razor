@@ -1,10 +1,24 @@
-﻿@page "/chat"
+﻿@page "/Chat"
 @inject NavigationManager NavigationManager
+@inject BlazorApp_Frontend.Services.SignalRService SignalRService
 @* @rendermode InteractiveWebAssembly *@
 
 <h3>Demo Chat</h3>
 
-@if(IsConnected()){
+<div>
+	<input @bind="UserInput" placeholder="Enter your name" />
+	<input @bind="MessageInput" placeholder="Enter a message" />
+	<button @onclick="SendMessage" disabled="@(!SignalRService.IsConnected)">Send</button>
+</div>
+<ul>
+	@foreach (var message in MessageList)
+	{
+		<li>@message</li>
+	}
+</ul>
+
+<!-- #region Woring Code -->
+@* @if(IsConnected()){
 
 	<div class="row">
 		<div class="col-lg-4">
@@ -32,31 +46,72 @@
 }
 else{
 	<span>Connection is connecting ....</span>
-}
+} *@
+
+<!-- #endregion -->
+
 
 @code {
-	private HubConnection hubConnection;
-	private List<string> MessageList = new List<string>();
-	private string? Userinput;
-	private string? MessageInput;
+
+	private List<string> MessageList = new();
+    private string? UserInput;
+    private string? MessageInput;
 
 	protected override async Task OnInitializedAsync()
 	{
-		hubConnection = new HubConnectionBuilder()
-		//.WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
-		.WithUrl(new Uri(NavigationManager.ToAbsoluteUri("https://localhost:7221/chathub").ToString()))
-		.Build();
+		SignalRService.OnMessageReceived -= HandleMessageReceived; // Unsubscribe previous handler
+		SignalRService.OnMessageReceived += HandleMessageReceived; // Subscribe current handler
 
-		hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
-		{
-			var encodedmessage = $"{user} : {message}";
-			MessageList.Add(encodedmessage);
-			InvokeAsync(StateHasChanged);
-		});
-
-		await hubConnection.StartAsync();
+		await SignalRService.InitializeAsync("https://localhost:7221/chathub");
 	}
-	Task Send() => hubConnection.SendAsync("SendMessage",Userinput,MessageInput);
 
-	public bool IsConnected() => hubConnection.State == HubConnectionState.Connected;
+	private void HandleMessageReceived(string user, string message)
+	{
+		var encodedMessage = $"{user}: {message}";
+		MessageList.Add(encodedMessage);
+		InvokeAsync(StateHasChanged);
+	}
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrEmpty(UserInput) && !string.IsNullOrEmpty(MessageInput))
+        {
+            await SignalRService.SendMessageAsync(UserInput, MessageInput);
+            MessageInput = string.Empty;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+		SignalRService.OnMessageReceived -= HandleMessageReceived;
+		await SignalRService.DisposeAsync();
+    }
+
+	#region Working Code
+	// private HubConnection hubConnection;
+	// private List<string> MessageList = new List<string>();
+	// private string? Userinput;
+	// private string? MessageInput;
+
+	// protected override async Task OnInitializedAsync()
+	// {
+	// 	hubConnection = new HubConnectionBuilder()
+	// 	//.WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
+	// 	.WithUrl(new Uri(NavigationManager.ToAbsoluteUri("https://localhost:7221/chathub").ToString()))
+	// 	.Build();
+
+	// 	hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+	// 	{
+	// 		var encodedmessage = $"{user} : {message}";
+	// 		MessageList.Add(encodedmessage);
+	// 		InvokeAsync(StateHasChanged);
+	// 	});
+
+	// 	await hubConnection.StartAsync();
+	// }
+	// Task Send() => hubConnection.SendAsync("SendMessage",Userinput,MessageInput);
+
+	// public bool IsConnected() => hubConnection.State == HubConnectionState.Connected;
+	#endregion
+
 }

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using BlazorApp_WebApi.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Models;
+using Newtonsoft.Json;
 using Services;
 
 namespace BlazorApp_WebApi.Controllers
@@ -10,9 +12,11 @@ namespace BlazorApp_WebApi.Controllers
     public class UsersController : ControllerBase
     {
         private UserService _userService;
-        public UsersController(UserService userService)
+        private IHubContext<ChatHub> _chathub;
+        public UsersController(UserService userService, IHubContext<ChatHub> chathub)
         {
             _userService = userService;
+            _chathub = chathub;
         }
 
         [Route("GetAllUsers")]
@@ -63,11 +67,16 @@ namespace BlazorApp_WebApi.Controllers
             {
                 int? Result = await _userService.CreateUserAsync(_Users);
 
-                if (Result == null && Result == 0)
+                if (Result != null && Result != 0)
+                {
+                    await SignalRCall();
+
+                    return Ok("Inserted UserID: " + Result);
+                }
+                else
                 {
                     return BadRequest("No users inserted.");
                 }
-                return Ok("Inserted UserID: " + Result);
             }
             catch (Exception ex)
             {
@@ -75,6 +84,7 @@ namespace BlazorApp_WebApi.Controllers
             }
 
         }
+
         [Route("UpdateUser")]
         [HttpPut]
         public async Task<IActionResult> UpdateUser([FromBody] Users _Users)
@@ -83,11 +93,15 @@ namespace BlazorApp_WebApi.Controllers
             {
                 var Result = await _userService.UpdateUserAsync(_Users);
 
-                if (!Result)
+                if (Result)
+                {
+                    await SignalRCall();
+                    return Ok("User Updated Successfully.");
+                }
+                else
                 {
                     return BadRequest("No Users Updated.");
                 }
-                return Ok("User Updated Successfully.");
             }
             catch (Exception ex)
             {
@@ -103,16 +117,26 @@ namespace BlazorApp_WebApi.Controllers
             {
                 var Result = await _userService.DeleteUserAsync(ID);
 
-                if (!Result)
+                if (Result)
+                {
+                    await SignalRCall();
+                    return Ok("User Deleted Successfully.");
+                }
+                else
                 {
                     return BadRequest("No Users Deleted.");
                 }
-                return Ok("User Deleted Successfully.");
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
+        }
+        private async Task SignalRCall()
+        {
+            var Users = await _userService.GetAllUsersAsync();
+            var serializedResult = JsonConvert.SerializeObject(Users.ToList());
+            await _chathub.Clients.All.SendAsync("ReceiveAllUsers", serializedResult);
         }
     }
 }
