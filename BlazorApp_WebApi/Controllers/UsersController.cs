@@ -1,4 +1,5 @@
 ﻿using BlazorApp_WebApi.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Models;
@@ -7,6 +8,7 @@ using Services;
 
 namespace BlazorApp_WebApi.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase

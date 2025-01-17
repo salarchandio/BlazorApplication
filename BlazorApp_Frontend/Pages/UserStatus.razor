@@ -34,8 +34,6 @@
 	private List<Models.Users> users = new List<Models.Users>();
 	private Models.Users user = new Models.Users();
 
-
-
 	protected override async Task OnInitializedAsync()
 	{
 		SignalRService.OnUserReceived -= HandleMessageReceived; // Unsubscribe previous handler
@@ -59,7 +57,6 @@
 			InvokeAsync(StateHasChanged);
 		}
 	}
-
 
 	public async ValueTask DisposeAsync()
 	{

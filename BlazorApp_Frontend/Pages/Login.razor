@@ -1,0 +1,59 @@
+﻿@page "/Login"
+@using Models
+@inject NavigationManager Navigation
+
+<h3>Login</h3>
+
+<EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="username">Username:</label>
+        <InputText id="username" @bind-Value="loginRequest.Username" />
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input id="password" type="password" Value="@loginRequest.Password " />
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error">@errorMessage</div>
+    }
+
+    <button type="submit">Login</button>
+</EditForm>
+
+@code {
+    private LoginRequest loginRequest = new LoginRequest();
+    private string errorMessage;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var isAuthenticated = await AuthenticateUserAsync(loginRequest);
+
+            if (isAuthenticated)
+            {
+                Navigation.NavigateTo("/UserManagement");
+            }
+            else
+            {
+                errorMessage = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred during login. Please try again.";
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task<bool> AuthenticateUserAsync(LoginRequest loginRequest)
+    {
+        await Task.Delay(500);
+        return loginRequest.Username == "admin" && loginRequest.Password == "password";
+    }
+}
