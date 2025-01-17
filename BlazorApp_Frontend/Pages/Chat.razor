@@ -2,13 +2,14 @@
 @inject NavigationManager NavigationManager
 @inject BlazorApp_Frontend.Services.SignalRService SignalRService
 @* @rendermode InteractiveWebAssembly *@
+@layout MainLayout
 
 <h3>Demo Chat</h3>
 
 <div>
 	<input @bind="UserInput" placeholder="Enter your name" />
 	<input @bind="MessageInput" placeholder="Enter a message" />
-	<button @onclick="SendMessage" disabled="@(!SignalRService.IsConnected)">Send</button>
+	<button class="btn btn-primary" @onclick="SendMessage" disabled="@(!SignalRService.IsConnected)">Send</button>
 </div>
 <ul>
 	@foreach (var message in MessageList)
